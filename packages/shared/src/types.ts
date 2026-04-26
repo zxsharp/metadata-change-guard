@@ -49,6 +49,7 @@ export interface SimulationResult {
   riskScore: number;
   riskLevel: RiskLevel;
   policyDecision: PolicyDecision;
+  metadataSource?: "openmetadata_live" | "mock" | "mock_fallback";
   impactedAssets: ImpactedAsset[];
   explanations: string[];
   recommendedActions: string[];

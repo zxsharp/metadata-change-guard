@@ -42,6 +42,18 @@ The normalized metadata is used by the simulation engine to calculate:
 
 Mock mode is also available. It uses `data/sample_metadata.json`, which follows the same normalized contract as live mode. This keeps local development, tests, and demos deterministic when an OpenMetadata server is not available.
 
+For serious validation, run strict live mode (no silent fallback):
+
+```bash
+OPENMETADATA_MODE=live \
+OPENMETADATA_BASE_URL=<openmetadata-api-base-url> \
+OPENMETADATA_JWT_TOKEN=<token> \
+OPENMETADATA_ALLOW_FALLBACK=false \
+pnpm --filter @crashtest/api dev
+```
+
+If OpenMetadata is unavailable or credentials are invalid in this mode, the API fails clearly instead of falling back.
+
 ## Features
 
 - Fastify API with typed request validation
@@ -128,6 +140,7 @@ Example response:
   "riskScore": 100,
   "riskLevel": "high",
   "policyDecision": "block",
+  "metadataSource": "openmetadata_live",
   "impactedAssets": [
     {
       "id": "dashboard_exec_revenue",
@@ -224,6 +237,7 @@ Required API environment variables:
 - `OPENMETADATA_MODE`: `mock` or `live`
 - `OPENMETADATA_BASE_URL`: OpenMetadata API base URL
 - `OPENMETADATA_JWT_TOKEN`: bearer token for OpenMetadata live mode
+- `OPENMETADATA_ALLOW_FALLBACK`: `true` or `false` (recommended `false` for strict live demos)
 - `PORT`: optional API port
 
 Required web environment variable:
@@ -330,4 +344,13 @@ curl -X POST "$API_BASE_URL/simulate" \
 curl -X POST "$API_BASE_URL/simulate" \
   -H "Content-Type: application/json" \
   -d @data/demo_payloads/high_risk.json
+```
+
+Verify data source explicitly:
+
+```bash
+curl "$API_BASE_URL/metadata/context" | jq '.source'
+curl -X POST "$API_BASE_URL/simulate" \
+  -H "Content-Type: application/json" \
+  -d @data/demo_payloads/high_risk.json | jq '.metadataSource'
 ```

@@ -7,4 +7,15 @@ export async function metadataRoutes(server: FastifyInstance) {
     const metadata = await client.getMetadataSnapshot();
     return reply.send(metadata.assets);
   });
+
+  server.get("/metadata/context", async (_request, reply) => {
+    const client = new OpenMetadataClient();
+    const snapshot = await client.getMetadataSnapshotWithSource();
+
+    return reply.send({
+      source: snapshot.source,
+      assets: snapshot.metadata.assets,
+      lineage: snapshot.metadata.lineage,
+    });
+  });
 }

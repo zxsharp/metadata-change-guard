@@ -11,6 +11,14 @@ export interface OpenMetadataClientConfig {
   baseUrl?: string;
   jwtToken?: string;
   mockFilePath?: string;
+  allowFallback?: boolean;
+}
+
+export type MetadataSnapshotSource = "openmetadata_live" | "mock" | "mock_fallback";
+
+export interface MetadataSnapshotWithSource {
+  metadata: NormalizedMetadata;
+  source: MetadataSnapshotSource;
 }
 
 export class OpenMetadataClient {
@@ -18,20 +26,40 @@ export class OpenMetadataClient {
   private readonly baseUrl?: string;
   private readonly jwtToken?: string;
   private readonly mockFilePath: string;
+  private readonly allowFallback: boolean;
 
   constructor(config: OpenMetadataClientConfig = {}) {
     this.mode = config.mode ?? (process.env.OPENMETADATA_MODE as "live" | "mock") ?? "mock";
     this.baseUrl = config.baseUrl ?? process.env.OPENMETADATA_BASE_URL;
     this.jwtToken = config.jwtToken ?? process.env.OPENMETADATA_JWT_TOKEN;
     this.mockFilePath = config.mockFilePath ?? resolveMockFilePath();
+    this.allowFallback =
+      config.allowFallback ??
+      (process.env.OPENMETADATA_ALLOW_FALLBACK
+        ? process.env.OPENMETADATA_ALLOW_FALLBACK === "true"
+        : this.mode !== "live");
+
+    if (this.mode === "live" && (!this.baseUrl || !this.jwtToken)) {
+      throw new Error(
+        "OPENMETADATA_MODE=live requires OPENMETADATA_BASE_URL and OPENMETADATA_JWT_TOKEN"
+      );
+    }
   }
 
   async getMetadataSnapshot(): Promise<NormalizedMetadata> {
-    if (this.mode === "live" && this.baseUrl && this.jwtToken) {
+    const snapshot = await this.getMetadataSnapshotWithSource();
+    return snapshot.metadata;
+  }
+
+  async getMetadataSnapshotWithSource(): Promise<MetadataSnapshotWithSource> {
+    if (this.mode === "live") {
       return this.getLiveMetadata();
     }
 
-    return this.getMockMetadata();
+    return {
+      metadata: await this.getMockMetadata(),
+      source: "mock",
+    };
   }
 
   private async getMockMetadata(): Promise<NormalizedMetadata> {
@@ -41,7 +69,7 @@ export class OpenMetadataClient {
     return normalizeMockMetadata(validated);
   }
 
-  private async getLiveMetadata(): Promise<NormalizedMetadata> {
+  private async getLiveMetadata(): Promise<MetadataSnapshotWithSource> {
     try {
       const tablePayload = await this.fetchOpenMetadata<{ data?: unknown[] }>(endpoints.searchTables);
       const assets = new Map<string, Asset>();
@@ -77,9 +105,20 @@ export class OpenMetadataClient {
         ),
       };
 
-      return metadataSchema.parse(normalized);
-    } catch {
-      return this.getMockMetadata();
+      return {
+        metadata: metadataSchema.parse(normalized),
+        source: "openmetadata_live",
+      };
+    } catch (error) {
+      if (!this.allowFallback) {
+        const message = error instanceof Error ? error.message : "Unknown OpenMetadata error";
+        throw new Error(`OpenMetadata live mode failed: ${message}`);
+      }
+
+      return {
+        metadata: await this.getMockMetadata(),
+        source: "mock_fallback",
+      };
     }
   }
 

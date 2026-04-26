@@ -16,9 +16,12 @@ export async function simulateRoutes(server: FastifyInstance) {
 
     try {
       const client = new OpenMetadataClient();
-      const metadata = await client.getMetadataSnapshot();
-      const result = simulateChange(parsed.data, metadata);
-      return reply.send(result);
+      const snapshot = await client.getMetadataSnapshotWithSource();
+      const result = simulateChange(parsed.data, snapshot.metadata);
+      return reply.send({
+        ...result,
+        metadataSource: snapshot.source,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Simulation failed";
       return reply.status(500).send({ error: message });
