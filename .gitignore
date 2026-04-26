@@ -1,5 +1,6 @@
 node_modules
 .pnpm-home
+.codex
 .env
 .env.*
 !.env.example

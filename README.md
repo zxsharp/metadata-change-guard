@@ -258,7 +258,7 @@ Deploy from the repository root so pnpm workspace packages resolve correctly.
 Build command:
 
 ```bash
-corepack enable && corepack prepare pnpm@9.1.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @crashtest/api build
+corepack enable && corepack prepare pnpm@9.1.0 --activate && pnpm install --frozen-lockfile --prod=false && pnpm --filter @crashtest/api build
 ```
 
 Start command:
@@ -290,7 +290,7 @@ Deploy from the repository root.
 Build command:
 
 ```bash
-corepack enable && corepack prepare pnpm@9.1.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @crashtest/web build
+corepack enable && corepack prepare pnpm@9.1.0 --activate && pnpm install --frozen-lockfile --prod=false && pnpm --filter @crashtest/web build
 ```
 
 Output directory:
