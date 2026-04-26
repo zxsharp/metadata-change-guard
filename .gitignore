@@ -1,0 +1,9 @@
+node_modules
+.pnpm-home
+.env
+.env.*
+!.env.example
+dist
+coverage
+.vite
+.DS_Store

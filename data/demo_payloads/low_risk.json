@@ -1,0 +1,6 @@
+{
+  "entityId": "table_sales_order_items",
+  "changeType": "add_column",
+  "columns": ["promo_code"],
+  "releaseWindow": "off_hours"
+}

@@ -1,0 +1,81 @@
+{
+  "assets": [
+    {
+      "id": "table_sales_orders",
+      "name": "sales.orders",
+      "type": "table",
+      "domain": "Revenue",
+      "owner": "team-analytics",
+      "criticality": "high",
+      "tags": ["PII.Sensitive"],
+      "qualityStatus": "pass",
+      "freshnessMinutes": 40
+    },
+    {
+      "id": "table_sales_order_items",
+      "name": "sales.order_items",
+      "type": "table",
+      "domain": "Revenue",
+      "owner": "team-analytics",
+      "criticality": "medium",
+      "tags": [],
+      "qualityStatus": "pass",
+      "freshnessMinutes": 55
+    },
+    {
+      "id": "table_finance_daily_revenue",
+      "name": "finance.daily_revenue",
+      "type": "table",
+      "domain": "Finance",
+      "owner": "team-finance",
+      "criticality": "high",
+      "tags": ["Business.Critical"],
+      "qualityStatus": "fail",
+      "freshnessMinutes": 220
+    },
+    {
+      "id": "dashboard_exec_revenue",
+      "name": "dashboard.exec_revenue",
+      "type": "dashboard",
+      "domain": "Executive",
+      "owner": "team-bi",
+      "criticality": "high",
+      "tags": [],
+      "qualityStatus": "unknown",
+      "freshnessMinutes": 35
+    },
+    {
+      "id": "ml_revenue_forecast",
+      "name": "ml.revenue_forecast",
+      "type": "mlmodel",
+      "domain": "DataScience",
+      "owner": "team-ml",
+      "criticality": "medium",
+      "tags": [],
+      "qualityStatus": "pass",
+      "freshnessMinutes": 70
+    }
+  ],
+  "lineage": [
+    {
+      "from": "table_sales_orders",
+      "to": "table_finance_daily_revenue",
+      "transformation": "daily_aggregation"
+    },
+    {
+      "from": "table_sales_order_items",
+      "to": "table_finance_daily_revenue",
+      "transformation": "items_enrichment"
+    },
+    {
+      "from": "table_finance_daily_revenue",
+      "to": "dashboard_exec_revenue",
+      "transformation": "dashboard_sync"
+    },
+    {
+      "from": "table_finance_daily_revenue",
+      "to": "ml_revenue_forecast",
+      "transformation": "feature_generation"
+    }
+  ]
+}

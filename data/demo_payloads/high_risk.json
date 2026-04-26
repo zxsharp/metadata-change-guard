@@ -1,0 +1,6 @@
+{
+  "entityId": "table_sales_orders",
+  "changeType": "drop_column",
+  "columns": ["customer_email"],
+  "releaseWindow": "business_hours"
+}
