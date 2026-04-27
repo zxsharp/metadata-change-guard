@@ -611,10 +611,14 @@ td span:not(.tag):not(.severity) {
 }
 
 .risk-score {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 20px;
   align-items: flex-start;
+}
+
+.risk-score > div:first-child {
+  min-width: 0;
 }
 
 .risk-score h2 {
@@ -634,6 +638,8 @@ td span:not(.tag):not(.severity) {
   place-items: center;
   width: 132px;
   height: 132px;
+  flex-shrink: 0;
+  justify-self: end;
   border-radius: 50%;
   background: conic-gradient(#dc2626 var(--score, 75%), #e4ebf2 0);
 }
@@ -696,6 +702,16 @@ td span:not(.tag):not(.severity) {
   .status-strip > div {
     border-right: 0;
     border-bottom: 1px solid #e4ebf2;
+  }
+}
+
+@media (max-width: 860px) {
+  .risk-score {
+    grid-template-columns: 1fr;
+  }
+
+  .score-meter {
+    justify-self: start;
   }
 }
 

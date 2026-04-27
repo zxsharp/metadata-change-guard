@@ -2,6 +2,11 @@
 
 Metadata Change Guard is a TypeScript application that uses OpenMetadata context to simulate proposed schema and contract changes before they are deployed. It calculates downstream blast radius, explains the risk, and returns a clear deployment decision: `allow`, `guarded`, or `block`.
 
+## Live Demo
+
+- **Web App:** [https://metadata-change-guard-api.vercel.app](https://metadata-change-guard-api.vercel.app)
+- **API Base URL:** [https://metadata-change-guard.onrender.com](https://metadata-change-guard.onrender.com)
+
 ## Problem
 
 Data teams often discover breaking schema changes after they have already affected dashboards, models, reports, or downstream pipelines. By then, the right owners may not have been notified, rollback paths may be unclear, and the business impact is already visible.
@@ -15,12 +20,17 @@ Metadata Change Guard shifts that decision earlier. Before a change is released,
 
 ## How It Works
 
-1. A user submits a proposed data change, such as dropping a column or changing a type.
-2. The API loads metadata context from OpenMetadata or from a deterministic fallback dataset.
-3. The simulation engine traverses downstream lineage and scores risk.
-4. The UI shows the decision, impacted assets, explanations, and recommended actions.
+Metadata Change Guard functions as an **automated policy engine** that integrates directly into your data CI/CD pipeline (e.g., GitHub Actions, dbt Cloud) or deployment workflow.
 
-The result is designed to be simple enough for a release decision and detailed enough for data owners to act on.
+1. **Change Interception**: A proposed schema or contract change (e.g., via a Pull Request) triggers the API with a simulation payload.
+2. **Context Enrichment**: The engine queries OpenMetadata to build a contextual subgraph of the affected entity, pulling in schema details, governance tags (e.g., PII/PHI), ownership, and current data quality metrics.
+3. **Lineage Graph Traversal**: Using OpenMetadata's lineage DAG, the engine recursively traverses all downstream dependencies (derived tables, ML models, dashboards) to map the exact blast radius of the proposed change.
+4. **Multi-Factor Risk Evaluation**: A deterministic policy engine evaluates the change using a weighted scoring matrix that analyzes:
+   - **Topology**: Breadth and depth of downstream impact.
+   - **Business Criticality**: Tier classification of impacted downstream assets (e.g., does this break an Executive Dashboard?).
+   - **Data Governance**: Presence of sensitive data tags on the mutated entity.
+   - **Operational Context**: Timing of the release (business hours vs. off-hours) and current downstream health/SLA status.
+5. **Automated Enforcement**: The engine outputs a deterministic decision (`allow`, `guarded`, or `block`), which can be used to automatically merge a PR, require specific owner approvals, or halt a risky deployment before it causes an incident.
 
 ## OpenMetadata Integration
 
@@ -67,6 +77,44 @@ If OpenMetadata is unavailable or credentials are invalid in this mode, the API 
 
 ## Architecture
 
+Metadata Change Guard uses a modular monorepo architecture separating the policy engine, API layer, and UI.
+
+```mermaid
+flowchart TD
+    subgraph CI/CD Pipeline
+        PR[Pull Request Created] --> Trigger[Webhook triggers API]
+    end
+
+    subgraph API Service (Fastify)
+        Trigger --> Endpoint[/simulate]
+    end
+
+    subgraph OpenMetadata (Source of Truth)
+        Endpoint -- Fetch Entity & Context --> OM_Context[Tags, Owners, Tiers]
+        Endpoint -- Fetch Lineage Graph --> OM_Lineage[Lineage DAG]
+    end
+
+    subgraph Policy Engine
+        OM_Lineage --> BFS[BFS Graph Traversal]
+        BFS --> Downstream[Impacted Downstream Nodes]
+        OM_Context --> Downstream
+        Downstream --> Matrix[Multi-Factor Risk Matrix]
+        Matrix --> Decision{Decision: Allow, Guarded, Block}
+    end
+
+    Decision --> UI[Web UI for Review]
+    Decision --> PR_Status[CI/CD Status Update]
+```
+
+### Core Packages
+- `apps/api`: A **Fastify API service** that validates payloads using Zod and exposes the `/simulate` endpoint.
+- `apps/web`: A **React + Vite** frontend utilizing TanStack Query for visual review of the policy decisions.
+- `packages/engine`: The core business logic containing the **BFS graph traversal** (`graph.ts`) and the **Multi-Factor Risk Scoring** (`scoring.ts`).
+- `packages/openmetadata-client`: The REST adapter that fetches and normalizes raw OpenMetadata responses into standard interfaces.
+- `packages/shared`: Shared TypeScript types and Zod contracts to ensure type safety across the boundary between the API, engine, and UI.
+
+## Code Structure
+
 ```text
 apps/
   api/                       Fastify API service
@@ -101,7 +149,7 @@ tests/
 Returns API health.
 
 ```bash
-curl "$API_BASE_URL/health"
+curl "https://metadata-change-guard.onrender.com/health"
 ```
 
 ### `GET /metadata/assets`
@@ -109,7 +157,7 @@ curl "$API_BASE_URL/health"
 Returns normalized metadata assets loaded from OpenMetadata live mode or mock fallback mode.
 
 ```bash
-curl "$API_BASE_URL/metadata/assets"
+curl "https://metadata-change-guard.onrender.com/metadata/assets"
 ```
 
 ### `POST /simulate`
@@ -117,7 +165,7 @@ curl "$API_BASE_URL/metadata/assets"
 Runs a change simulation.
 
 ```bash
-curl -X POST "$API_BASE_URL/simulate" \
+curl -X POST "https://metadata-change-guard.onrender.com/simulate" \
   -H "Content-Type: application/json" \
   -d @data/demo_payloads/high_risk.json
 ```
@@ -217,8 +265,8 @@ pnpm --filter @crashtest/web dev
 Use `PORT` to override the API port and `VITE_API_BASE_URL` to point the web app at a specific API deployment.
 
 ```bash
-PORT=<api-port> pnpm --filter @crashtest/api dev
-VITE_API_BASE_URL=<api-base-url> pnpm --filter @crashtest/web dev
+PORT=3000 pnpm --filter @crashtest/api dev
+VITE_API_BASE_URL=https://metadata-change-guard.onrender.com pnpm --filter @crashtest/web dev
 ```
 
 ## OpenMetadata Live Mode
@@ -316,7 +364,7 @@ apps/web/dist
 Required web environment variable:
 
 ```text
-VITE_API_BASE_URL=<api-base-url>
+VITE_API_BASE_URL=https://metadata-change-guard.onrender.com
 ```
 
 After changing `VITE_API_BASE_URL`, rebuild and redeploy the web app because Vite embeds environment variables at build time.
@@ -336,12 +384,12 @@ Recommended recording length: 2.5 to 3.5 minutes.
 API-only fallback demo:
 
 ```bash
-curl "$API_BASE_URL/health"
-curl "$API_BASE_URL/metadata/assets"
-curl -X POST "$API_BASE_URL/simulate" \
+curl "https://metadata-change-guard.onrender.com/health"
+curl "https://metadata-change-guard.onrender.com/metadata/assets"
+curl -X POST "https://metadata-change-guard.onrender.com/simulate" \
   -H "Content-Type: application/json" \
   -d @data/demo_payloads/low_risk.json
-curl -X POST "$API_BASE_URL/simulate" \
+curl -X POST "https://metadata-change-guard.onrender.com/simulate" \
   -H "Content-Type: application/json" \
   -d @data/demo_payloads/high_risk.json
 ```
@@ -349,8 +397,8 @@ curl -X POST "$API_BASE_URL/simulate" \
 Verify data source explicitly:
 
 ```bash
-curl "$API_BASE_URL/metadata/context" | jq '.source'
-curl -X POST "$API_BASE_URL/simulate" \
+curl "https://metadata-change-guard.onrender.com/metadata/context" | jq '.source'
+curl -X POST "https://metadata-change-guard.onrender.com/simulate" \
   -H "Content-Type: application/json" \
   -d @data/demo_payloads/high_risk.json | jq '.metadataSource'
 ```
