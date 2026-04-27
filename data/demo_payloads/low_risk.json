@@ -1,5 +1,5 @@
 {
-  "entityId": "table_sales_order_items",
+  "entityId": "table_product_catalog",
   "changeType": "add_column",
   "columns": ["promo_code"],
   "releaseWindow": "off_hours"

@@ -634,24 +634,50 @@ td span:not(.tag):not(.severity) {
 }
 
 .score-meter {
-  display: grid;
-  place-items: center;
-  width: 132px;
-  height: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 140px;
   flex-shrink: 0;
   justify-self: end;
   border-radius: 50%;
   background: conic-gradient(#dc2626 var(--score, 75%), #e4ebf2 0);
+  position: relative;
+}
+
+.score-meter::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  background: white;
+  border-radius: 50%;
+}
+
+.score-meter span,
+.score-meter small {
+  position: relative;
+  z-index: 1;
 }
 
 .score-meter span {
   font-size: 2.3rem;
   font-weight: 950;
+  line-height: 1;
+  margin-bottom: 2px;
 }
 
 .score-meter small {
   color: #536273;
   font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
 }
 
 .result-grid {

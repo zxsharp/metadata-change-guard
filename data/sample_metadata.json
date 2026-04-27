@@ -1,6 +1,28 @@
 {
   "assets": [
     {
+      "id": "table_product_catalog",
+      "name": "product.catalog",
+      "type": "table",
+      "domain": "Inventory",
+      "owner": "team-inventory",
+      "criticality": "low",
+      "tags": [],
+      "qualityStatus": "pass",
+      "freshnessMinutes": 10
+    },
+    {
+      "id": "dashboard_product_metrics",
+      "name": "dashboard.product_metrics",
+      "type": "dashboard",
+      "domain": "Inventory",
+      "owner": "team-inventory",
+      "criticality": "low",
+      "tags": [],
+      "qualityStatus": "pass",
+      "freshnessMinutes": 5
+    },
+    {
       "id": "table_sales_orders",
       "name": "sales.orders",
       "type": "table",
@@ -57,6 +79,11 @@
     }
   ],
   "lineage": [
+    {
+      "from": "table_product_catalog",
+      "to": "dashboard_product_metrics",
+      "transformation": "direct_query"
+    },
     {
       "from": "table_sales_orders",
       "to": "table_finance_daily_revenue",

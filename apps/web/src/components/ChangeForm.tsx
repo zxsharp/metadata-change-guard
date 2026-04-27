@@ -39,7 +39,7 @@ export function ChangeForm({ assets, onSubmit, loading = false }: ChangeFormProp
 
   function applyScenario(scenario: "safe" | "risky") {
     if (scenario === "safe") {
-      const safeAsset = assets.find((asset) => asset.id === "table_sales_order_items") ?? assets[0];
+      const safeAsset = assets.find((asset) => asset.id === "table_product_catalog") ?? assets[0];
       setEntityId(safeAsset?.id ?? "");
       setChangeType("add_column");
       setColumns("promo_code");
